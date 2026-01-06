@@ -7,6 +7,8 @@ import TreeVisualizer from './components/TreeVisualizer';
 import AnimationControls from './components/AnimationControls';
 import CodePanel from './components/CodePanel';
 import AlgorithmSelector from './components/AlgorithmSelector';
+import PythonEditor from './components/PythonEditor';
+import { parsePythonCode } from './utils/pythonParser';
 import { Sparkles } from 'lucide-react';
 
 function App() {
@@ -55,6 +57,18 @@ function App() {
   const handleStepBackward = () => {
     if (currentStepIndex > 0) {
       setCurrentStepIndex(currentStepIndex - 1);
+    }
+  };
+
+  const handleExecutePython = (code: string) => {
+    try {
+      const customAlgorithm = parsePythonCode(code, selectedAlgorithm);
+      setSelectedAlgorithm(customAlgorithm);
+      setCurrentStepIndex(0);
+      setIsPlaying(false);
+    } catch (error) {
+      console.error('Error parsing Python code:', error);
+      alert('Error parsing your Python code. Please check the syntax.');
     }
   };
 
@@ -124,7 +138,7 @@ function App() {
         </div>
 
         <div className="w-1/3">
-          <CodePanel algorithm={selectedAlgorithm} />
+          <PythonEditor onExecute={handleExecutePython} algorithm={selectedAlgorithm} />
         </div>
       </div>
     </div>

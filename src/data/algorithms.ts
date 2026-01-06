@@ -149,11 +149,11 @@ function generateLinearSearchSteps(arr: number[], target: number) {
   return steps;
 }
 
-function generateLinkedListTraversalSteps() {
+function generateLinkedListTraversalSteps(list?: any[]) {
   const steps = [];
   let stepId = 0;
 
-  const list = [
+  const linkedList = list || [
     { value: 10, next: 1 },
     { value: 20, next: 2 },
     { value: 30, next: 3 },
@@ -163,16 +163,16 @@ function generateLinkedListTraversalSteps() {
   steps.push({
     id: `step-${stepId++}`,
     description: 'Starting at head node',
-    data: list,
+    data: linkedList,
     currentIndex: 0,
     highlights: [],
   });
 
-  for (let i = 0; i < list.length; i++) {
+  for (let i = 0; i < linkedList.length; i++) {
     steps.push({
       id: `step-${stepId++}`,
-      description: `Visiting node with value ${list[i].value}`,
-      data: list,
+      description: `Visiting node with value ${linkedList[i].value}`,
+      data: linkedList,
       currentIndex: i,
       highlights: Array.from({ length: i }, (_, j) => j),
     });
@@ -181,18 +181,18 @@ function generateLinkedListTraversalSteps() {
   steps.push({
     id: `step-${stepId++}`,
     description: 'Reached end of list',
-    data: list,
-    highlights: Array.from({ length: list.length }, (_, i) => i),
+    data: linkedList,
+    highlights: Array.from({ length: linkedList.length }, (_, i) => i),
   });
 
   return steps;
 }
 
-function generateTreeTraversalSteps() {
+function generateTreeTraversalSteps(tree?: any[]) {
   const steps = [];
   let stepId = 0;
 
-  const tree = [
+  const binaryTree = tree || [
     { value: 50, left: 1, right: 2 },
     { value: 30, left: 3, right: 4 },
     { value: 70, left: 5, right: 6 },
@@ -202,20 +202,30 @@ function generateTreeTraversalSteps() {
     { value: 80, left: null, right: null },
   ];
 
-  const inorderTraversal = [3, 1, 4, 0, 5, 2, 6];
+  // Generate in-order traversal sequence
+  const inorderTraversal: number[] = [];
+  const traverse = (index: number) => {
+    if (index >= binaryTree.length || binaryTree[index].left === null && binaryTree[index].right === null && index > 0) return;
+    
+    const node = binaryTree[index];
+    if (node.left !== null) traverse(node.left as number);
+    inorderTraversal.push(index);
+    if (node.right !== null) traverse(node.right as number);
+  };
+  traverse(0);
 
   steps.push({
     id: `step-${stepId++}`,
     description: 'Starting in-order traversal (Left, Root, Right)',
-    data: tree,
+    data: binaryTree,
     highlights: [],
   });
 
   for (const index of inorderTraversal) {
     steps.push({
       id: `step-${stepId++}`,
-      description: `Visiting node with value ${tree[index].value}`,
-      data: tree,
+      description: `Visiting node with value ${binaryTree[index].value}`,
+      data: binaryTree,
       currentIndex: index,
       highlights: inorderTraversal.slice(0, inorderTraversal.indexOf(index)),
     });
@@ -224,7 +234,7 @@ function generateTreeTraversalSteps() {
   steps.push({
     id: `step-${stepId++}`,
     description: 'In-order traversal complete!',
-    data: tree,
+    data: binaryTree,
     highlights: inorderTraversal,
   });
 
@@ -237,16 +247,19 @@ export const algorithms: Algorithm[] = [
     name: 'Bubble Sort',
     category: 'Sorting',
     description: 'Repeatedly swaps adjacent elements if they are in wrong order',
-    code: `function bubbleSort(arr) {
-  for (let i = 0; i < arr.length - 1; i++) {
-    for (let j = 0; j < arr.length - i - 1; j++) {
-      if (arr[j] > arr[j + 1]) {
-        [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
-      }
-    }
-  }
-  return arr;
-}`,
+    code: `# Bubble Sort
+arr = [64, 34, 25, 12, 22, 11, 90]
+
+def bubble_sort(arr):
+    n = len(arr)
+    for i in range(n - 1):
+        for j in range(n - i - 1):
+            if arr[j] > arr[j + 1]:
+                arr[j], arr[j + 1] = arr[j + 1], arr[j]
+    return arr
+
+result = bubble_sort(arr)
+print(result)`,
     initialData: [64, 34, 25, 12, 22, 11, 90],
     steps: generateBubbleSortSteps([64, 34, 25, 12, 22, 11, 90]),
     visualizerType: 'array',
@@ -256,19 +269,28 @@ export const algorithms: Algorithm[] = [
     name: 'Binary Search',
     category: 'Searching',
     description: 'Efficiently finds target by repeatedly dividing search interval in half',
-    code: `function binarySearch(arr, target) {
-  let left = 0, right = arr.length - 1;
+    code: `# Binary Search
+arr = [11, 12, 22, 25, 34, 64, 90]
+target = 25
 
-  while (left <= right) {
-    const mid = Math.floor((left + right) / 2);
+def binary_search(arr, target):
+    left = 0
+    right = len(arr) - 1
+    
+    while left <= right:
+        mid = (left + right) // 2
+        
+        if arr[mid] == target:
+            return mid
+        elif arr[mid] < target:
+            left = mid + 1
+        else:
+            right = mid - 1
+    
+    return -1
 
-    if (arr[mid] === target) return mid;
-    if (arr[mid] < target) left = mid + 1;
-    else right = mid - 1;
-  }
-
-  return -1;
-}`,
+result = binary_search(arr, target)
+print(f"Found at index: {result}")`,
     initialData: [11, 12, 22, 25, 34, 64, 90],
     steps: generateBinarySearchSteps([11, 12, 22, 25, 34, 64, 90], 25),
     visualizerType: 'array',
@@ -278,14 +300,18 @@ export const algorithms: Algorithm[] = [
     name: 'Linear Search',
     category: 'Searching',
     description: 'Sequentially checks each element until target is found',
-    code: `function linearSearch(arr, target) {
-  for (let i = 0; i < arr.length; i++) {
-    if (arr[i] === target) {
-      return i;
-    }
-  }
-  return -1;
-}`,
+    code: `# Linear Search
+arr = [64, 34, 25, 12, 22, 11, 90]
+target = 22
+
+def linear_search(arr, target):
+    for i in range(len(arr)):
+        if arr[i] == target:
+            return i
+    return -1
+
+result = linear_search(arr, target)
+print(f"Found at index: {result}")`,
     initialData: [64, 34, 25, 12, 22, 11, 90],
     steps: generateLinearSearchSteps([64, 34, 25, 12, 22, 11, 90], 22),
     visualizerType: 'array',
@@ -295,14 +321,31 @@ export const algorithms: Algorithm[] = [
     name: 'Linked List Traversal',
     category: 'Data Structures',
     description: 'Walk through each node in a linked list from head to tail',
-    code: `function traverseLinkedList(head) {
-  let current = head;
+    code: `# Linked List Traversal
+# Edit the values array to change the linked list
+values = [10, 20, 30, 40]
 
-  while (current !== null) {
-    console.log(current.value);
-    current = current.next;
-  }
-}`,
+class Node:
+    def __init__(self, value):
+        self.value = value
+        self.next = None
+
+# Create linked list from values array
+head = None
+if values:
+    head = Node(values[0])
+    current = head
+    for val in values[1:]:
+        current.next = Node(val)
+        current = current.next
+
+def traverse_list(head):
+    current = head
+    while current is not None:
+        print(current.value)
+        current = current.next
+
+traverse_list(head)`,
     initialData: [
       { value: 10, next: 1 },
       { value: 20, next: 2 },
@@ -317,13 +360,38 @@ export const algorithms: Algorithm[] = [
     name: 'Binary Tree In-Order Traversal',
     category: 'Data Structures',
     description: 'Visit nodes in Left-Root-Right order',
-    code: `function inorderTraversal(root) {
-  if (root === null) return;
+    code: `# Binary Tree In-Order Traversal
+# Edit tree_values to change the tree structure
+# Format: [root, left_subtree, right_subtree, ...]
+tree_values = [50, 30, 70, 20, 40, 60, 80]
 
-  inorderTraversal(root.left);
-  console.log(root.value);
-  inorderTraversal(root.right);
-}`,
+class TreeNode:
+    def __init__(self, value):
+        self.value = value
+        self.left = None
+        self.right = None
+
+# Create balanced binary tree from array
+def create_tree(values, index=0):
+    if index >= len(values) or values[index] is None:
+        return None
+    
+    root = TreeNode(values[index])
+    root.left = create_tree(values, 2 * index + 1)
+    root.right = create_tree(values, 2 * index + 2)
+    return root
+
+root = create_tree(tree_values)
+
+def inorder_traversal(root):
+    if root is None:
+        return
+    
+    inorder_traversal(root.left)
+    print(root.value)
+    inorder_traversal(root.right)
+
+inorder_traversal(root)`,
     initialData: [
       { value: 50, left: 1, right: 2 },
       { value: 30, left: 3, right: 4 },
