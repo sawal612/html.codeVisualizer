@@ -5,7 +5,6 @@ import ArrayVisualizer from './components/ArrayVisualizer';
 import LinkedListVisualizer from './components/LinkedListVisualizer';
 import TreeVisualizer from './components/TreeVisualizer';
 import AnimationControls from './components/AnimationControls';
-import CodePanel from './components/CodePanel';
 import AlgorithmSelector from './components/AlgorithmSelector';
 import PythonEditor from './components/PythonEditor';
 import { parsePythonCode } from './utils/pythonParser';
@@ -70,6 +69,12 @@ function App() {
       console.error('Error parsing Python code:', error);
       alert('Error parsing your Python code. Please check the syntax.');
     }
+  };
+
+  const handleGeminiAnalysis = (algorithm: Algorithm) => {
+    setSelectedAlgorithm(algorithm);
+    setCurrentStepIndex(0);
+    setIsPlaying(false);
   };
 
   const currentStep = selectedAlgorithm.steps[currentStepIndex];
@@ -138,7 +143,11 @@ function App() {
         </div>
 
         <div className="w-1/3">
-          <PythonEditor onExecute={handleExecutePython} algorithm={selectedAlgorithm} />
+          <PythonEditor 
+            onExecute={handleExecutePython} 
+            onGeminiAnalysis={handleGeminiAnalysis}
+            algorithm={selectedAlgorithm} 
+          />
         </div>
       </div>
     </div>
