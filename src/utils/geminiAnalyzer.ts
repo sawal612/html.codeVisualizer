@@ -3,11 +3,12 @@ import { Algorithm, AnimationStep } from '../types';
 const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
 
 export async function analyzeCodeWithGemini(
-  code: string,
-  apiKey: string
+  code: string
 ): Promise<Algorithm> {
+  const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+
   if (!apiKey) {
-    throw new Error('Gemini API key is required. Please enter your API key.');
+    return simulateGeminiAnalysis(code);
   }
 
   const prompt = `Analyze this Python code and provide a step-by-step execution trace that can be used to visualize the algorithm:
@@ -147,6 +148,300 @@ function convertGeminiAnalysisToSteps(
   return steps;
 }
 
+function simulateGeminiAnalysis(code: string): Promise<Algorithm> {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      const arrayMatch = code.match(/arr\s*=\s*\[([^\]]+)\]/);
+      const targetMatch = code.match(/target\s*=\s*(\d+)/);
+      const valuesMatch = code.match(/values\s*=\s*\[([^\]]+)\]/);
+      const treeValuesMatch = code.match(/tree_values\s*=\s*\[([^\]]+)\]/);
+
+      let algorithmName = 'Custom Algorithm';
+      let algorithmType: 'array' | 'linkedList' | 'tree' | 'generic' = 'array';
+      let initialData: any = [64, 34, 25, 12, 22, 11, 90];
+      let steps: AnimationStep[] = [];
+
+      const isBubbleSort = code.includes('bubble_sort');
+      const isBinarySearch = code.includes('binary_search');
+      const isLinearSearch = code.includes('linear_search');
+      const isLinkedList = code.includes('class Node') && code.includes('self.next');
+      const isTree = code.includes('TreeNode') || (code.includes('self.left') && code.includes('self.right'));
+
+      if (arrayMatch) {
+        initialData = arrayMatch[1].split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n));
+      }
+
+      if (isLinkedList) {
+        algorithmName = 'Linked List Traversal';
+        algorithmType = 'linkedList';
+
+        if (valuesMatch) {
+          const linkedListValues = valuesMatch[1].split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n));
+          initialData = linkedListValues.map((value, index) => ({
+            value,
+            next: index < linkedListValues.length - 1 ? index + 1 : null,
+          }));
+        }
+
+        steps = [
+          {
+            id: 'step-0',
+            description: 'Starting at head node',
+            data: initialData,
+            currentIndex: 0,
+            highlights: [],
+          },
+        ];
+
+        initialData.forEach((node: any, i: number) => {
+          steps.push({
+            id: `step-${i + 1}`,
+            description: `Visiting node with value ${node.value}`,
+            data: initialData,
+            currentIndex: i,
+            highlights: Array.from({ length: i }, (_, j) => j),
+          });
+        });
+
+        steps.push({
+          id: 'step-final',
+          description: 'Reached end of list',
+          data: initialData,
+          highlights: Array.from({ length: initialData.length }, (_, i) => i),
+        });
+      } else if (isTree) {
+        algorithmName = 'Binary Tree Traversal';
+        algorithmType = 'tree';
+
+        if (treeValuesMatch) {
+          const treeValues = treeValuesMatch[1].split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n));
+          initialData = treeValues.map((value, i) => ({
+            value,
+            left: 2 * i + 1 < treeValues.length ? 2 * i + 1 : null,
+            right: 2 * i + 2 < treeValues.length ? 2 * i + 2 : null,
+          }));
+        }
+
+        const inorderTraversal: number[] = [];
+        const traverse = (index: number) => {
+          if (index >= initialData.length) return;
+          const node = initialData[index];
+          if (node.left !== null) traverse(node.left);
+          inorderTraversal.push(index);
+          if (node.right !== null) traverse(node.right);
+        };
+        traverse(0);
+
+        steps = [
+          {
+            id: 'step-0',
+            description: 'Starting in-order traversal (Left, Root, Right)',
+            data: initialData,
+            highlights: [],
+          },
+        ];
+
+        inorderTraversal.forEach((index, i) => {
+          steps.push({
+            id: `step-${i + 1}`,
+            description: `Visiting node with value ${initialData[index].value}`,
+            data: initialData,
+            currentIndex: index,
+            highlights: inorderTraversal.slice(0, i),
+          });
+        });
+
+        steps.push({
+          id: 'step-final',
+          description: 'In-order traversal complete',
+          data: initialData,
+          highlights: inorderTraversal,
+        });
+      } else if (isBubbleSort) {
+        algorithmName = 'Bubble Sort';
+        const sortData = [...initialData];
+
+        steps = [
+          {
+            id: 'step-0',
+            description: 'Initial array',
+            data: [...sortData],
+            highlights: [],
+          },
+        ];
+
+        for (let i = 0; i < sortData.length - 1; i++) {
+          for (let j = 0; j < sortData.length - i - 1; j++) {
+            steps.push({
+              id: `step-${steps.length}`,
+              description: `Comparing ${sortData[j]} and ${sortData[j + 1]}`,
+              data: [...sortData],
+              comparing: [j, j + 1],
+              sorted: Array.from({ length: i }, (_, k) => sortData.length - 1 - k),
+            });
+
+            if (sortData[j] > sortData[j + 1]) {
+              [sortData[j], sortData[j + 1]] = [sortData[j + 1], sortData[j]];
+              steps.push({
+                id: `step-${steps.length}`,
+                description: `Swapped ${sortData[j + 1]} and ${sortData[j]}`,
+                data: [...sortData],
+                highlights: [j, j + 1],
+                sorted: Array.from({ length: i }, (_, k) => sortData.length - 1 - k),
+              });
+            }
+          }
+        }
+
+        steps.push({
+          id: 'step-final',
+          description: 'Array sorted',
+          data: sortData,
+          sorted: Array.from({ length: sortData.length }, (_, i) => i),
+        });
+      } else if (isBinarySearch) {
+        algorithmName = 'Binary Search';
+        const target = targetMatch ? parseInt(targetMatch[1]) : initialData[Math.floor(initialData.length / 2)];
+        const sortedData = [...initialData].sort((a, b) => a - b);
+
+        steps = [
+          {
+            id: 'step-0',
+            description: `Searching for ${target} in sorted array`,
+            data: sortedData,
+            highlights: [],
+          },
+        ];
+
+        let left = 0;
+        let right = sortedData.length - 1;
+        let found = false;
+
+        while (left <= right) {
+          const mid = Math.floor((left + right) / 2);
+
+          steps.push({
+            id: `step-${steps.length}`,
+            description: `Checking middle element: ${sortedData[mid]}`,
+            data: sortedData,
+            currentIndex: mid,
+            highlights: [mid],
+          });
+
+          if (sortedData[mid] === target) {
+            steps.push({
+              id: `step-${steps.length}`,
+              description: `Found ${target} at index ${mid}`,
+              data: sortedData,
+              highlights: [mid],
+              sorted: [mid],
+            });
+            found = true;
+            break;
+          } else if (sortedData[mid] < target) {
+            left = mid + 1;
+            steps.push({
+              id: `step-${steps.length}`,
+              description: `${sortedData[mid]} < ${target}, searching right half`,
+              data: sortedData,
+              comparing: [mid + 1, right],
+            });
+          } else {
+            right = mid - 1;
+            steps.push({
+              id: `step-${steps.length}`,
+              description: `${sortedData[mid]} > ${target}, searching left half`,
+              data: sortedData,
+              comparing: [left, mid - 1],
+            });
+          }
+        }
+
+        if (!found) {
+          steps.push({
+            id: 'step-final',
+            description: `${target} not found in array`,
+            data: sortedData,
+            highlights: [],
+          });
+        }
+      } else if (isLinearSearch) {
+        algorithmName = 'Linear Search';
+        const target = targetMatch ? parseInt(targetMatch[1]) : initialData[Math.floor(initialData.length / 2)];
+
+        steps = [
+          {
+            id: 'step-0',
+            description: `Searching for ${target}`,
+            data: initialData,
+            highlights: [],
+          },
+        ];
+
+        let found = false;
+        for (let i = 0; i < initialData.length; i++) {
+          steps.push({
+            id: `step-${steps.length}`,
+            description: `Checking index ${i}: ${initialData[i]}`,
+            data: initialData,
+            currentIndex: i,
+            highlights: [i],
+          });
+
+          if (initialData[i] === target) {
+            steps.push({
+              id: `step-${steps.length}`,
+              description: `Found ${target} at index ${i}`,
+              data: initialData,
+              highlights: [i],
+              sorted: [i],
+            });
+            found = true;
+            break;
+          }
+        }
+
+        if (!found) {
+          steps.push({
+            id: 'step-final',
+            description: `${target} not found`,
+            data: initialData,
+            highlights: [],
+          });
+        }
+      } else {
+        steps = [
+          {
+            id: 'step-0',
+            description: 'Initial state',
+            data: initialData,
+            highlights: [],
+          },
+          {
+            id: 'step-final',
+            description: 'Code execution simulated',
+            data: initialData,
+            highlights: [],
+          },
+        ];
+      }
+
+      const algorithm: Algorithm = {
+        id: 'gemini-simulated',
+        name: algorithmName,
+        category: 'AI-Analyzed Code',
+        description: `Simulated analysis of ${algorithmName}`,
+        code,
+        initialData,
+        steps,
+        visualizerType: algorithmType,
+      };
+
+      resolve(algorithm);
+    }, 500);
+  });
+}
+
 export async function validateGeminiApiKey(apiKey: string): Promise<boolean> {
   if (!apiKey) {
     return false;
@@ -167,7 +462,7 @@ export async function validateGeminiApiKey(apiKey: string): Promise<boolean> {
       }),
     });
 
-    return response.ok || response.status === 400; // 400 means key exists but input is invalid
+    return response.ok || response.status === 400;
   } catch (error) {
     return false;
   }

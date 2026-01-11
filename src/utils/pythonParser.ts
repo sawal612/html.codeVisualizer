@@ -1,22 +1,12 @@
 import { Algorithm, AnimationStep } from '../types';
 
-interface PythonExecutionTrace {
-  line: number;
-  variables: Record<string, any>;
-  operation: string;
-}
-
 export function parsePythonCode(code: string, currentAlgorithm?: Algorithm): Algorithm {
-  const lines = code.split('\n').filter(line => line.trim() && !line.trim().startsWith('#'));
-  const steps: AnimationStep[] = [];
-  
   // Check for data structure types first (more specific)
   const isLinkedList = code.includes('class Node') && code.includes('self.next');
   const isTree = code.includes('TreeNode') || (code.includes('self.left') && code.includes('self.right'));
-  
+
   // Then check for algorithms
   const isBubbleSort = code.includes('bubble_sort') && code.includes('arr[j]') && code.includes('arr[j+1]');
-  const isQuickSort = code.includes('quick_sort') || code.includes('partition');
   const isBinarySearch = code.includes('binary_search') && !isTree;
   const isLinearSearch = code.includes('linear_search') && !isLinkedList;
 
